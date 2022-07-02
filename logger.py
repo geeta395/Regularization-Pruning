@@ -341,7 +341,7 @@ class Logger(object):
         '''For example, 'Projects/CRD/logger.py', then return CRD
         '''
         file_path = os.path.abspath(__file__)
-        return file_path.split('/')[-2]
+        return file_path.split('/')[-1]   # [-2]
     
     def __send_to_exp_hub(self):
         '''For every experiment, it will send <ExpNote> to a hub for the convenience of checking.

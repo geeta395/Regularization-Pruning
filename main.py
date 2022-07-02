@@ -135,7 +135,7 @@ def main_worker(gpu, ngpus_per_node, args):
             args.workers = int((args.workers + ngpus_per_node - 1) / ngpus_per_node)
             model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
         else:
-            model.cuda()
+            model        #.cuda()
             # DistributedDataParallel will divide and allocate batch_size to all
             # available GPUs if device_ids are not set
             model = torch.nn.parallel.DistributedDataParallel(model)
@@ -146,9 +146,9 @@ def main_worker(gpu, ngpus_per_node, args):
         # DataParallel will divide and allocate batch_size to all available GPUs
         if args.arch.startswith('alexnet') or args.arch.startswith('vgg'):
             model.features = torch.nn.DataParallel(model.features)
-            model.cuda()
+            model     #.cuda()
         else:
-            model = torch.nn.DataParallel(model).cuda()
+            model = torch.nn.DataParallel(model)     #.cuda()
 
     # @mst: load the unpruned model for pruning 
     # This may be useful for the non-imagenet cases where we use our pretrained models
@@ -163,7 +163,7 @@ def main_worker(gpu, ngpus_per_node, args):
     netprint(model, comment='base model arch')
 
     # define loss function (criterion) and optimizer
-    criterion = nn.CrossEntropyLoss().cuda(args.gpu)
+    criterion = nn.CrossEntropyLoss()    #.cuda(args.gpu)
 
     optimizer = torch.optim.SGD(model.parameters(), args.lr,
                                 momentum=args.momentum,
@@ -266,7 +266,7 @@ def main_worker(gpu, ngpus_per_node, args):
             state = torch.load(args.resume_path)
             prune_state = state['prune_state'] # finetune or update_reg or stabilize_reg
             if prune_state == 'finetune':
-                model = state['model'].cuda()
+                model = state['model']     #.cuda()
                 model.load_state_dict(state['state_dict'])
                 if args.arch.startswith('lenet'):
                     logprint('==> Using Adam optimizer')
@@ -286,7 +286,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
         if args.directly_ft_weights:
             state = torch.load(args.directly_ft_weights)
-            model = state['model'].cuda()
+            model = state['model']         #.cuda()
             model.load_state_dict(state['state_dict'])
             prune_state = 'finetune'
             logprint("==> load pretrained model successfully: '{}'. Epoch = {}. prune_state = '{}'".format(
@@ -357,12 +357,12 @@ def main_worker(gpu, ngpus_per_node, args):
         jsv = []
         for i, (images, target) in enumerate(train_loader):
             if i < args.check_jsv_loop:
-                images, target = images.cuda(), target.cuda()
+                images, target = images, target   #.cuda(), .cuda()
                 batch_size = images.size(0)
                 images.requires_grad = True # for Jacobian computation
                 output = model(images)
                 jacobian = compute_jacobian(images, output) # shape [batch_size, num_classes, num_channels, input_width, input_height]
-                jacobian = jacobian.view(batch_size, num_classes, -1)
+                jacobian = jacobian.reshape(batch_size, num_classes, -1)
                 u, s, v = torch.svd(jacobian)
                 jsv.append(s.data.cpu().numpy())
                 logprint('[%3d/%3d] calculating Jacobian...' % (i, len(train_loader)))
@@ -499,7 +499,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, print_log=True
 
         if args.gpu is not None:
             images = images.cuda(args.gpu, non_blocking=True)
-        target = target.cuda(args.gpu, non_blocking=True)
+        target = target    #.cuda(args.gpu, non_blocking=True)
 
         # compute output
         output = model(images)
@@ -559,7 +559,7 @@ def validate(val_loader, model, criterion, args, noisy_model_ensemble=False):
         for i, (images, target) in enumerate(val_loader):
             if args.gpu is not None:
                 images = images.cuda(args.gpu, non_blocking=True)
-            target = target.cuda(args.gpu, non_blocking=True)
+            target = target        #.cuda(args.gpu, non_blocking=True)
 
             # compute output
             t1 = time.time()
@@ -603,7 +603,7 @@ def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
 
 # @mst: use our own save model function
 def save_model(state, is_best=False, mark=''):
-    out = pjoin(logger.weights_path, "checkpoint.pth")
+    out = pjoin(logger.weights_path, "checkpoint.pth").replace('/','\\')
     torch.save(state, out)
     if is_best:
         out_best = pjoin(logger.weights_path, "checkpoint_best.pth")
@@ -668,11 +668,11 @@ def accuracy(output, target, topk=(1,)):
 
         _, pred = output.topk(maxk, 1, True, True)
         pred = pred.t()
-        correct = pred.eq(target.view(1, -1).expand_as(pred))
+        correct = pred.eq(target.reshape(1, -1).expand_as(pred))
 
         res = []
         for k in topk:
-            correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+            correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
 

@@ -319,7 +319,7 @@ class MetaPruner:
                 bias = False if isinstance(m.bias, type(None)) else True
                 kept_weights = m.weight.data[kept_filter][:, kept_chl, :, :]
                 new_conv = nn.Conv2d(kept_weights.size(1), kept_weights.size(0), m.kernel_size,
-                                  m.stride, m.padding, m.dilation, m.groups, bias).cuda()
+                                  m.stride, m.padding, m.dilation, m.groups, bias)    #.cuda()
                 new_conv.weight.data.copy_(kept_weights) # load weights into the new module
                 if bias:
                     kept_bias = m.bias.data[kept_filter]
@@ -333,7 +333,7 @@ class MetaPruner:
 
             elif isinstance(m, nn.BatchNorm2d) and m == next_bn:
                 new_bn = nn.BatchNorm2d(len(kept_filter), eps=m.eps, momentum=m.momentum, 
-                        affine=m.affine, track_running_stats=m.track_running_stats).cuda()
+                        affine=m.affine, track_running_stats=m.track_running_stats)     #.cuda()
                 
                 # copy bn weight and bias
                 if self.args.copy_bn_w:
@@ -374,7 +374,7 @@ class MetaPruner:
                     
                     # build the new linear layer
                     bias = False if isinstance(m.bias, type(None)) else True
-                    new_linear = nn.Linear(in_features=len(kept_dim_in), out_features=m.out_features, bias=bias).cuda()
+                    new_linear = nn.Linear(in_features=len(kept_dim_in), out_features=m.out_features, bias=bias)   #.cuda()
                     new_linear.weight.data.copy_(kept_weights)
                     if bias:
                         new_linear.bias.data.copy_(m.bias.data)
@@ -392,7 +392,7 @@ class MetaPruner:
         self.mask = {}
         for name, m in self.model.named_modules():
             if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
-                mask = torch.ones_like(m.weight.data).cuda().flatten()
+                mask = torch.ones_like(m.weight.data).flatten()       #.cuda().flatten()
                 pruned = self.pruned_wg[name]
                 mask[pruned] = 0
                 self.mask[name] = mask.view_as(m.weight.data)

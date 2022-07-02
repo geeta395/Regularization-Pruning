@@ -46,9 +46,9 @@ class Pruner(MetaPruner):
 
                 # initialize reg
                 if self.args.wg == 'weight':
-                    self.reg[name] = torch.zeros_like(m.weight.data).flatten().cuda()
+                    self.reg[name] = torch.zeros_like(m.weight.data).flatten()   #.cuda()
                 else:
-                    self.reg[name] = torch.zeros(shape[0], shape[1]).cuda() 
+                    self.reg[name] = torch.zeros(shape[0], shape[1])   #.cuda() 
                 
                 # get original weight magnitude
                 w_abs = self._get_score(m)
@@ -366,7 +366,7 @@ class Pruner(MetaPruner):
     
     def _resume_prune_status(self, ckpt_path):
         state = torch.load(ckpt_path)
-        self.model = state['model'].cuda()
+        self.model = state['model']        #.cuda()
         self.model.load_state_dict(state['state_dict'])
         self.optimizer = optim.SGD(self.model.parameters(), 
                                 lr=self.args.lr_pick if self.args.__dict__.get('AdaReg_only_picking') else self.args.lr_prune, 
@@ -415,7 +415,7 @@ class Pruner(MetaPruner):
         acc1 = acc5 = 0
         while True:
             for _, (inputs, targets) in enumerate(self.train_loader):
-                inputs, targets = inputs.cuda(), targets.cuda()
+                inputs, targets = inputs, targets          # .cuda(),.cuda()
                 self.total_iter += 1
                 total_iter = self.total_iter
                 
@@ -500,7 +500,7 @@ class Pruner(MetaPruner):
                     self.args.AdaReg_only_picking = False # do not get in again
                     # reinit
                     for k in self.reg:
-                        self.reg[k] = torch.zeros_like(self.reg[k]).cuda()
+                        self.reg[k] = torch.zeros_like(self.reg[k])   #.cuda()
                     self.hist_mag_ratio = {}
                 
                 if self.args.__dict__.get('AdaReg_revive_kept') and self.all_layer_finish_pick:
